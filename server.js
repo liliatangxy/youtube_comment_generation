@@ -3,6 +3,7 @@ var app = express()
 var https = require('https')
 var http = require('http')
 var fs = require('fs')
+var qs = require('qs')
 var config = require('./config.json')
 var request = require('sync-request')
 
@@ -33,26 +34,6 @@ function positive(s) {
 		},
 		"method": "POST"
 	}
-/*
-	score = null
-
-	var postReq = https.request(options, function(response) {
-		var rawData = ""
-		response.setEncoding('utf8')
-		response.on('data', (chunk) => rawData += chunk)
-		response.on('end', function() {
-			data = JSON.parse(rawData)
-			console.log('a'+score)
-			score = data['documents'][0]['score']
-			console.log('b'+score)
-		})
-	})
-	postReq.write(comment)
-	postReq.end()
-
-	// RIP
-	while (score === null) {}
-	console.log('c'+score)*/
 
 	var request = require('sync-request')
 	var res = request('POST', 'https://westus.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment', {
@@ -65,25 +46,23 @@ function positive(s) {
 }
 
 function getComments(videoId) {
-	var options = {
-		"host": "www.googleapis.com",
-		"path": "/youtube/v3/commentThreads",
-		"method": "GET",
-		"data": {
+	var get_params = qs.stringify({
 			"part": "id,replies,snippet",
 			"videoId": videoId,
 			"key": config.apiKey
-		}
-	}
+			})
+
+	var url = "https://www.googleapis.com/youtube/v3/commentThreads?".concat(get_params)
+
 	var commentList = []
-	https.get("https://www.googleapis.com/youtube/v3/commentThreads?part=id,replies,snippet&videoId=VnT7pT6zCcA&key=AIzaSyBxs-6Se4npdSVpxprIHMcLBVmcy77OrvM", function (res) {
+	var get_req = https.request(url, function (res) {
 		var rawData = ""
 		res.setEncoding('utf8')
 		res.on('data', (chunk) => rawData += chunk)
 		res.on('end', function() {
 			var data = JSON.parse(rawData)
 			for (key in data['items']) {
-				if (key > 250) break;
+				if (key > 150) break;
 				var comment = {}
 				var string = data['items'][key]['snippet']['topLevelComment']['snippet']['textDisplay']
 				comment.text = string
@@ -113,6 +92,8 @@ function getComments(videoId) {
 			})
 		})
 	})
+	get_req.write(get_params)
+	get_req.end()
 }
 
 app.get('/', function (req, res) {
@@ -132,4 +113,4 @@ app.listen(8000, function() {
 	console.log('Listening on port 8000')
 });
 
-getComments("0CJeDetA45Q")
+getComments("oHTzsteQx3g")
