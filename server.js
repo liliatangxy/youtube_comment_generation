@@ -3,37 +3,51 @@ var app = express()
 var https = require('https')
 var http = require('http')
 var fs = require('fs')
-
 var config = require('./config.json')
 
+
 function positive(s) {
-	var comment = {
-   "documents": [
-    {
-      "language": "en",
-      "id": "0",
-      "text": s
-    }
-  ]
-	}
+	
+	if (s == undefined || s == "") return -1;
+
+	var comment = JSON.stringify({
+	"documents": [
+		{
+		"language": "en",
+		"id": "0",
+		"text": s
+		}
+	]
+	})
+
 	var options = {
 		"host": "westus.api.cognitive.microsoft.com",
+		"port": 443,
 		"path": "/text/analytics/v2.0/sentiment",
 		"headers": {
 			"Content-Type": "application/json",
+			"Content-Length": Buffer.byteLength(comment),
 			"Ocp-Apim-Subscription-Key": config.microsoftAPIKey
 		},
-		"method": "POST",
-		"data": comment
+		"method": "POST"
 	}
-	http.request(options, function (res) {
-		https.get(url, function(response) {
-			response.on('data', function(chunk) {
-				data = JSON.parse(chunk)
-				return data['documents']['score']
-			})
+	score = -999
+
+	var post_req = https.request(options, function(response) {
+		var rawData = ""
+		response.setEncoding('utf8')
+		response.on('data', (chunk) => rawData += chunk)
+		response.on('end', function() {
+			data = JSON.parse(rawData)
+			console.log(data)
+			// score = data['documents']['score']
 		})
 	})
+
+	post_req.write(comment)
+	post_req.end()
+
+	return score
 }
 
 function getComments(videoId) {
@@ -56,27 +70,24 @@ function getComments(videoId) {
 			var data = JSON.parse(rawData)
 			for (key in data['items']) {
 				var comment = {}
-				string = data['items'][key]['snippet']['topLevelComment']['snippet']['textDisplay']
+				var string = data['items'][key]['snippet']['topLevelComment']['snippet']['textDisplay']
 				comment.text = string
+				comment.sentiment = positive(string)
 				comment.replies = []
 				if (data['items'][key].hasOwnProperty('replies')) {
 					for (key_replies in data['items'][key]['replies']['comments']) {
+						var text_stuff = data['items'][key]['replies']['comments'][key_replies]['textDisplay']
+						var sentiment_score = positive(text_stuff)
 						comment.replies.push([
 							{
-								'text': data['items'][key]['replies']['comments'][key_replies]['textDisplay']
+								'text': text_stuff,
+								'sentiment': sentiment_score
 							}
 						])
 					}
 				}
 				commentList.push(comment)
 			}
-			for (comment in commentList) {
-				comment.sentiment = positive(comment.text)
-				for (reply in comment.replies) {
-					reply.sentiment = positive(reply.text)
-				}
-			}
-			console.log(commentList)
 			var str = JSON.stringify(commentList)
 			fs.writeFile("comments.json", str, function(err) {
 				if (err) {
@@ -94,6 +105,11 @@ app.get('/', function (req, res) {
 app.get('/force_directed.html', function (req, res) {
 	res.sendFile(__dirname + '/force_directed.html')
 });
+
+app.get('/comments.json', function (req, res) {
+	res.sendFile(__dirname + '/comments.json')
+});
+
 
 app.listen(8000, function() {
 	console.log('Listening on port 8000')
