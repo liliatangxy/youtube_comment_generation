@@ -6,7 +6,30 @@ var fs = require('fs')
 var qs = require('qs')
 var config = require('./config.json')
 var request = require('sync-request')
+const Markov = require('libmarkov')
+var unescape = require('unescape')
 
+function generateMarkov(comments_json_path) {
+	var comments_json = JSON.parse(fs.readFileSync(comments_json_path, 'utf8'))
+
+	var text = ""
+
+	for (var i = 0; i < comments_json.length; i++) {
+		text += comments_json[i].text + " "
+	}
+
+	var generator = new Markov(text);
+ 
+	var logger = fs.createWriteStream('markov.txt', {
+	  flags: 'w'
+	})
+
+	for (var i = 0; i < 500; i++) {
+		logger.write(generator.generate(1))
+		logger.write("\n")
+	}
+	logger.end()
+}
 
 function positive(s) {
 
@@ -62,16 +85,16 @@ function getComments(videoId) {
 		res.on('end', function() {
 			var data = JSON.parse(rawData)
 			for (key in data['items']) {
-				if (key > 150) break;
+				if (key > 250) break;
 				var comment = {}
 				var string = data['items'][key]['snippet']['topLevelComment']['snippet']['textDisplay']
-				comment.text = string
+				comment.text = unescape(string)
 				comment.sentiment = positive(string)
 				if (comment.sentiment == -1) continue; // error from MS api
 				comment.replies = []
 				if (data['items'][key].hasOwnProperty('replies')) {
 					for (key_replies in data['items'][key]['replies']['comments']) {
-						var text_stuff = data['items'][key]['replies']['comments'][key_replies]['textDisplay']
+						var text_stuff = unescape(data['items'][key]['replies']['comments'][key_replies]['textDisplay'])
 						var sentiment_score = positive(text_stuff)
 						if (sentiment_score == -1) continue; // error from MS api
 						comment.replies.push([
@@ -113,4 +136,5 @@ app.listen(8000, function() {
 	console.log('Listening on port 8000')
 });
 
-getComments("oHTzsteQx3g")
+//getComments("oHTzsteQx3g")
+generateMarkov("comments.json")
