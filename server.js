@@ -12,7 +12,6 @@ var bodyParser = require('body-parser');
 
 function generateMarkov(comments_json_path) {
 	var comments_json = JSON.parse(fs.readFileSync(comments_json_path, 'utf8'))
-
 	var text = ""
 
 	for (var i = 0; i < comments_json.length; i++) {
@@ -21,14 +20,23 @@ function generateMarkov(comments_json_path) {
 
 	var generator = new Markov(text);
  
-	var logger = fs.createWriteStream('markov.txt', {
+	var markovset = new Set([]);
+
+	var logger = fs.createWriteStream('markov.js', {
 	  flags: 'w'
 	})
 
-	for (var i = 0; i < 500; i++) {
-		logger.write(generator.generate(1))
-		logger.write("\n")
+	while (markovset.size < 11) {
+		markovset.add(generator.generate(1).concat("\n"))
 	}
+
+	logger.write('var markovlist = [')
+	markovset.forEach(function(value) {
+  		logger.write('`'.concat(value).concat('`'))
+  		logger.write(',')
+	})
+	logger.write(']')
+
 	logger.end()
 }
 
@@ -141,10 +149,12 @@ app.get('/comments.json', function (req, res) {
 	res.sendFile(__dirname + '/comments.json')
 });
 
-app.post('/parsevideo', function (req, res) {
+app.post('/', function (req, res) {
 	getComments(req.body.videoId)
 	generateMarkov("comments.json")
-	res.sendFile(__dirname + '/parsevideo.html')
+	setTimeout(function() {
+		res.sendFile(__dirname + '/force_directed.html')
+    }, 5000); // pretend CMU wifi is slow
 });
 
 
