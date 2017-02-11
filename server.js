@@ -4,13 +4,15 @@ var https = require('https')
 var http = require('http')
 var fs = require('fs')
 var config = require('./config.json')
+var request = require('sync-request')
 
 
 function positive(s) {
 
 	if (s == undefined || s == "") return -1;
+	//return Math.random(0,1);
 
-	var comment = JSON.stringify({
+	var comment = {
 	"documents": [
 		{
 		"language": "en",
@@ -18,7 +20,7 @@ function positive(s) {
 		"text": s
 		}
 	]
-	})
+	}
 
 	var options = {
 		"host": "westus.api.cognitive.microsoft.com",
@@ -31,29 +33,34 @@ function positive(s) {
 		},
 		"method": "POST"
 	}
-	score = -999
+/*
+	score = null
 
-	var makeRequest = function (options, callback) {
-		var postReq = https.request(options, function(response) {
-			var rawData = ""
-			response.setEncoding('utf8')
-			response.on('data', (chunk) => rawData += chunk)
-			response.on('end', function() {
-				callback(rawData)
-			})
+	var postReq = https.request(options, function(response) {
+		var rawData = ""
+		response.setEncoding('utf8')
+		response.on('data', (chunk) => rawData += chunk)
+		response.on('end', function() {
+			data = JSON.parse(rawData)
+			console.log('a'+score)
+			score = data['documents'][0]['score']
+			console.log('b'+score)
 		})
-		postReq.write(comment)
-		postReq.end()
-	}
+	})
+	postReq.write(comment)
+	postReq.end()
 
-	var callbackFinished = function () {
-		data = JSON.parse(rawData)
-		console.log(data)
-		score = data['documents']['score']
-	}
+	// RIP
+	while (score === null) {}
+	console.log('c'+score)*/
 
-	makeRequest(options. callbackFinished)
-
+	var request = require('sync-request')
+	var res = request('POST', 'https://westus.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment', {
+	  json: comment,
+	  headers: {"Ocp-Apim-Subscription-Key": config.microsoftAPIKey}
+	})
+	data = JSON.parse(res.getBody('utf8'))
+	score = data['documents'][0]['score']
 	return score
 }
 
@@ -76,15 +83,18 @@ function getComments(videoId) {
 		res.on('end', function() {
 			var data = JSON.parse(rawData)
 			for (key in data['items']) {
+				if (key > 250) break;
 				var comment = {}
 				var string = data['items'][key]['snippet']['topLevelComment']['snippet']['textDisplay']
 				comment.text = string
 				comment.sentiment = positive(string)
+				if (comment.sentiment == -1) continue; // error from MS api
 				comment.replies = []
 				if (data['items'][key].hasOwnProperty('replies')) {
 					for (key_replies in data['items'][key]['replies']['comments']) {
 						var text_stuff = data['items'][key]['replies']['comments'][key_replies]['textDisplay']
 						var sentiment_score = positive(text_stuff)
+						if (sentiment_score == -1) continue; // error from MS api
 						comment.replies.push([
 							{
 								'text': text_stuff,
@@ -122,4 +132,4 @@ app.listen(8000, function() {
 	console.log('Listening on port 8000')
 });
 
-getComments("24RYgiLNZRU")
+getComments("0CJeDetA45Q")
