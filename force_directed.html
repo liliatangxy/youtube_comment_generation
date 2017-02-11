@@ -3,13 +3,13 @@
 <meta charset="utf-8">
 <style>
 .links line {
-  stroke: #999;
-  stroke-opacity: 0.6;
+	stroke: #999;
+	stroke-opacity: 0.6;
 }
 
 .nodes circle {
-  stroke: #fff;
-  stroke-width: 1.5px;
+	stroke: #fff;
+	stroke-width: 1.5px;
 }
 
 </style>
@@ -17,115 +17,121 @@
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
 function parseNodesLinks(input_json) {
-  var nodes = [];
-  var links = [];
+	var nodes = []
+	var links = []
 
-  for (var i = 0; i < input_json.length; i++) {
-    var parent_id = i.toString();
-    var node = input_json[i];
-    nodes.push({
-        "id": parent_id,
-        "text": node.text,
-        "sentiment": node.sentiment
-      });
+	for (var i = 0; i < input_json.length; i++) {
+		var parent_id = i.toString()
+		var node = input_json[i]
+		nodes.push({
+				"id": parent_id,
+				"text": node.text,
+				"sentiment": node.sentiment
+			})
+		if (parent_id != 0) {
+				links.push({
+						"source": parent_id,
+						"target": parent_id - 1
+				})
+		}
 
-    for (var j = 0; j < input_json[i].replies.length; j++) {
-      var node = input_json[i].replies[j];
-      var child_id = i.toString().concat('---').concat(j.toString());
-      nodes.push({
-        "id": child_id,
-        "text": node.text,
-        "sentiment": node.sentiment
-      });
-      links.push({
-        source: parent_id,
-        target: child_id
-      });
-    }
-  }
+		for (var j = 0; j < input_json[i].replies.length; j++) {
+			var node = input_json[i].replies[j]
+			var child_id = i.toString().concat('---').concat(j.toString())
+			nodes.push({
+				"id": child_id,
+				"text": node.text,
+				"sentiment": node.sentiment
+			})
+			links.push({
+				"source": parent_id,
+				"target": child_id
+			})
+		}
+	}
 
-  return {'nodes': nodes, 'links': links};
-  }
+	return {'nodes': nodes, 'links': links}
+	}
 
 var svg = d3.select("svg"),
-    width = +svg.attr("width"),
-    height = +svg.attr("height");
+		width = +svg.attr("width"),
+		height = +svg.attr("height")
 
-var color_neg = d3.scaleLinear().domain([0,49]).range([d3.rgb(255,0,0), d3.rgb(150,0,0)]);
-var color_pos = d3.scaleLinear().domain([50,100]).range([d3.rgb(0,150,0), d3.rgb(0,255,0)]);
+var color_neg = d3.scaleLinear().domain([0,49]).range([d3.rgb(255,0,0), d3.rgb(150,0,0)])
+var color_pos = d3.scaleLinear().domain([50,100]).range([d3.rgb(0,150,0), d3.rgb(0,255,0)])
 
 var simulation = d3.forceSimulation()
-    .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(function(d) {return 80;}))
-    .force("charge", d3.forceManyBody())
-    .force("center", d3.forceCenter(width / 2, height / 2));
+		.force("link", d3.forceLink().id(function(d) { return d.id }).distance(function(d) {return 80}))
+		.force("charge", d3.forceManyBody())
+		.force("center", d3.forceCenter(width / 2, height / 2))
 
 d3.json("comments.json", function(error, data) {
-  if (error) throw error;
+	if (error) throw error
 
-  var graph = parseNodesLinks(data);
+	var graph = parseNodesLinks(data)
 
-  var link = svg.append("g")
-      .attr("class", "links")
-    .selectAll("line")
-    .data(graph.links)
-    .enter().append("line")
-      .attr("stroke-width", function(d) { return Math.sqrt(d.value); });
+	var link = svg.append("g")
+			.attr("class", "links")
+		.selectAll("line")
+		.data(graph.links)
+		.enter().append("line")
+			.attr("stroke-width", function(d) { return Math.sqrt(d.value) })
 
-  var NODE_SIZE = 10;
+	var NODE_SIZE = 10;
 
-  var node = svg.append("g")
-      .attr("class", "nodes")
-    .selectAll("circle")
-    .data(graph.nodes)
-    .enter().append("circle")
-      .attr("r", function(d) { return d.id.includes('---') ? NODE_SIZE : NODE_SIZE * 2} )
-      .attr("fill", function(d) {
-        var sent = Math.round(d.sentiment * 100);
-        return sent < 50 ? color_neg(sent) : color_pos(sent);
-        })
-      .call(d3.drag()
-          .on("start", dragstarted)
-          .on("drag", dragged)
-          .on("end", dragended));
+	var node = svg.append("g")
+			.attr("class", "nodes")
+		.selectAll("circle")
+		.data(graph.nodes)
+		.enter().append("circle")
+			.attr("r", function(d) { return d.id.includes('---') ? NODE_SIZE : NODE_SIZE * 2} )
+			.attr("fill", function(d) {
+				var sent = Math.round(d.sentiment * 100)
+				return sent < 50 ? color_neg(sent) : color_pos(sent)
+				})
+			.call(d3.drag()
+					.on("start", dragstarted)
+					.on("drag", dragged)
+					.on("end", dragended))
 
-  node.append("title")
-      .text(function(d) { return d.text; });
+	node.append("title")
+			.text(function(d) { return d.text })
 
-  simulation
-      .nodes(graph.nodes)
-      .on("tick", ticked);
+	simulation
+			.nodes(graph.nodes)
+			.on("tick", ticked)
 
-  simulation.force("link")
-      .links(graph.links);
+	simulation.force("link")
+			.links(graph.links)
 
-  function ticked() {
-    link
-        .attr("x1", function(d) { return d.source.x; })
-        .attr("y1", function(d) { return d.source.y; })
-        .attr("x2", function(d) { return d.target.x; })
-        .attr("y2", function(d) { return d.target.y; });
+	function ticked() {
+		link
+				.attr("x1", function(d) { return d.source.x })
+				.attr("y1", function(d) { return d.source.y })
+				.attr("x2", function(d) { return d.target.x })
+				.attr("y2", function(d) { return d.target.y })
 
-    node
-        .attr("cx", function(d) { return d.x; })
-        .attr("cy", function(d) { return d.y; });
-  }
-});
+		node
+				.attr("cx", function(d) { return d.x })
+				.attr("cy", function(d) { return d.y })
+		}
+	})
 
 function dragstarted(d) {
-  if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-  d.fx = d.x;
-  d.fy = d.y;
+	if (!d3.event.active) simulation.alphaTarget(0.3).restart()
+	d.fx = d.x
+	d.fy = d.y
 }
 
 function dragged(d) {
-  d.fx = d3.event.x;
-  d.fy = d3.event.y;
+	d.fx = d3.event.x
+	d.fy = d3.event.y
 }
 
 function dragended(d) {
-  if (!d3.event.active) simulation.alphaTarget(0);
-  d.fx = null;
-  d.fy = null;
+	if (!d3.event.active) simulation.alphaTarget(0)
+	d.fx = null
+	d.fy = null
 }
 
 </script>
