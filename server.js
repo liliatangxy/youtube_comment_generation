@@ -8,6 +8,7 @@ var config = require('./config.json')
 var request = require('sync-request')
 const Markov = require('libmarkov')
 var unescape = require('unescape')
+var bodyParser = require('body-parser');
 
 function generateMarkov(comments_json_path) {
 	var comments_json = JSON.parse(fs.readFileSync(comments_json_path, 'utf8'))
@@ -116,8 +117,17 @@ function getComments(videoId) {
 		})
 	})
 	get_req.write(get_params)
-	get_req.end()
+	get_req.end()	
 }
+
+
+app.use(bodyParser.urlencoded());
+app.use(bodyParser.json());
+
+
+app.use(express.static(__dirname));
+app.use(express.static("public"));
+
 
 app.get('/', function (req, res) {
 	res.sendFile(__dirname + '/force_directed.html')
@@ -131,10 +141,13 @@ app.get('/comments.json', function (req, res) {
 	res.sendFile(__dirname + '/comments.json')
 });
 
+app.post('/parsevideo', function (req, res) {
+	getComments(req.body.videoId)
+	generateMarkov("comments.json")
+	res.sendFile(__dirname + '/parsevideo.html')
+});
+
 
 app.listen(8000, function() {
 	console.log('Listening on port 8000')
 });
-
-//getComments("oHTzsteQx3g")
-generateMarkov("comments.json")

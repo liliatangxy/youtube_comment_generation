@@ -57,10 +57,10 @@ form {
 
 </style>
 <svg width="960" height="600"></svg>
-<form>
+<form method="post" action="http://127.0.0.1:8000/parsevideo">
   <div class="form-group">
     <label for="videoId">Youtube Video Link</label>
-    <input type="text" class="form-control" id=videoId>
+    <input type="text" class="form-control" id="videoId" name="videoId">
   </div>
   <div id="headerButtons">
     <button type="submit">Submit</button>
