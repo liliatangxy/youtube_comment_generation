@@ -20,7 +20,7 @@ function parseNodesLinks(input_json) {
   var nodes = [];
   var links = [];
 
-  for (var i = 0; i < input_json.length; i++) {    
+  for (var i = 0; i < input_json.length; i++) {
     var parent_id = i.toString();
     var node = input_json[i];
     nodes.push({
@@ -31,7 +31,7 @@ function parseNodesLinks(input_json) {
 
     for (var j = 0; j < input_json[i].replies.length; j++) {
       var node = input_json[i].replies[j];
-      var child_id = i.toString().concat('---').concat(j.toString()); 
+      var child_id = i.toString().concat('---').concat(j.toString());
       nodes.push({
         "id": child_id,
         "text": node.text,
@@ -59,7 +59,7 @@ var simulation = d3.forceSimulation()
     .force("charge", d3.forceManyBody())
     .force("center", d3.forceCenter(width / 2, height / 2));
 
-d3.json("force_directed_test.json", function(error, data) {
+d3.json("comments.json", function(error, data) {
   if (error) throw error;
 
   var graph = parseNodesLinks(data);
@@ -70,7 +70,7 @@ d3.json("force_directed_test.json", function(error, data) {
     .data(graph.links)
     .enter().append("line")
       .attr("stroke-width", function(d) { return Math.sqrt(d.value); });
-  
+
   var NODE_SIZE = 10;
 
   var node = svg.append("g")
@@ -79,10 +79,10 @@ d3.json("force_directed_test.json", function(error, data) {
     .data(graph.nodes)
     .enter().append("circle")
       .attr("r", function(d) { return d.id.includes('---') ? NODE_SIZE : NODE_SIZE * 2} )
-      .attr("fill", function(d) { 
+      .attr("fill", function(d) {
         var sent = Math.round(d.sentiment * 100);
         return sent < 50 ? color_neg(sent) : color_pos(sent);
-        })      
+        })
       .call(d3.drag()
           .on("start", dragstarted)
           .on("drag", dragged)
