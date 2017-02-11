@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <!-- Adapted from https://bl.ocks.org/mbostock/4062045 -->
 <meta charset="utf-8">
+<head>
+<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+<link href="bootstrap/css/bootstrap-theme.min.css" rel="stylesheet">
+</head>
 <style>
 .links line {
 	stroke: #999;
@@ -12,8 +16,56 @@
 	stroke-width: 1.5px;
 }
 
+form button {
+    font-size: 16px;
+    font-weight: bolder;
+
+    padding: 5px 10px;
+    width: 90px;
+    margin: 2px 0 2px 10px;
+
+    box-shadow: none;
+
+    color: #e8b92b;
+
+    background-color: white;
+    border-radius: 5px;
+    border: 2px solid #e8b92b;
+
+    text-decoration: none;
+    transition: all 0.2s;
+    line-height: inherit;
+}
+
+form button:hover {
+    background-color: #e8b92b;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+form {
+    text-align: center;
+    position: fixed;
+    top: 0;
+    right: 50px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
 </style>
 <svg width="960" height="600"></svg>
+<form>
+  <div class="form-group">
+    <label for="videoId">Youtube Video Link</label>
+    <input type="text" class="form-control" id=videoId>
+  </div>
+  <div id="headerButtons">
+    <button>Submit</button>
+  </div>
+</form>
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
 function parseNodesLinks(input_json) {
