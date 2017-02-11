@@ -1,0 +1,16 @@
+<html>
+  <script>
+    var theUrl = "https://www.googleapis.com/youtube/v3/commentThreads?part=id,replies,snippet&videoId=VnT7pT6zCcA&key="
+    function httpGet(theUrl) {
+      var xmlHttp = new XMLHttpRequest();
+      xmlHttp.open("GET", theUrl, false); // false for synchronous request
+      xmlHttp.send(null);
+      return xmlHttp.responseText;
+    }
+    window.onload = function() {
+      document.body.innerHTML = httpGet(theUrl);
+    }
+  </script>
+  <body>
+  </body>
+</html>
