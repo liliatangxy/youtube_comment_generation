@@ -7,7 +7,7 @@ var config = require('./config.json')
 
 
 function positive(s) {
-	
+
 	if (s == undefined || s == "") return -1;
 
 	var comment = JSON.stringify({
@@ -33,19 +33,26 @@ function positive(s) {
 	}
 	score = -999
 
-	var post_req = https.request(options, function(response) {
-		var rawData = ""
-		response.setEncoding('utf8')
-		response.on('data', (chunk) => rawData += chunk)
-		response.on('end', function() {
-			data = JSON.parse(rawData)
-			console.log(data)
-			// score = data['documents']['score']
+	var makeRequest = function (options, callback) {
+		var postReq = https.request(options, function(response) {
+			var rawData = ""
+			response.setEncoding('utf8')
+			response.on('data', (chunk) => rawData += chunk)
+			response.on('end', function() {
+				callback(rawData)
+			})
 		})
-	})
+		postReq.write(comment)
+		postReq.end()
+	}
 
-	post_req.write(comment)
-	post_req.end()
+	var callbackFinished = function () {
+		data = JSON.parse(rawData)
+		console.log(data)
+		score = data['documents']['score']
+	}
+
+	makeRequest(options. callbackFinished)
 
 	return score
 }
